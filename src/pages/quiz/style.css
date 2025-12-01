@@ -25,12 +25,20 @@
     transition: background 0.3s ease;
 }
 
+.header {
+    display: flex;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ccc;
+}
+
 .p-numero-pergunta {
     font-weight: 600;
     font-size: .9rem;
     margin-bottom: 5px;
     text-transform: uppercase;
-    color: #ccc;
 }
 
 .titulo-pergunta {
@@ -212,4 +220,12 @@ footer {
     .div-tentar-novamente .p-emoji {
         font-size: 2.5rem;
     }
+}
+
+
+.cronometro {
+    text-align: center;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    font-weight: 700 !important;
 }

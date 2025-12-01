@@ -16,7 +16,7 @@ import gif from "../../componentes/gifs/1.mp4";
 import defeat from "../../componentes/gifs/defeat.mp4";
 import congrats from "../../componentes/gifs/congrats.mp4";
 
-export default function Quiz({ setQuiz }) {
+export default function Quiz({ formatarTempo, setQuiz }) {
 
     const [numeroPergunta, setNumeroPergunta] = useState(0);
     const [PerguntasAleatorias, setPerguntasAleatorias] = useState([]);
@@ -24,6 +24,13 @@ export default function Quiz({ setQuiz }) {
     const [locked, setLocked] = useState(false);
     const [verificado, setVerificado] = useState(false);
     const [statusRespostas, setStatusRespostas] = useState([]);
+
+    // ⭐ Cronômetro individual por pergunta
+    const [cronometroPergunta, setCronometroPergunta] = useState(0);
+
+    // ⭐ Guarda o tempo total somado
+    const [temposPerguntas, setTemposPerguntas] = useState([]);
+
     const [midiaAtual, setMidiaAtual] = useState(null);
     const [mensagemFeedback, setMensagemFeedback] = useState("");
     const [corFeedback, setCorFeedback] = useState("");
@@ -40,6 +47,7 @@ export default function Quiz({ setQuiz }) {
         return a;
     }
 
+    // ⭐ Iniciar perguntas
     useEffect(() => {
         const copia = shuffleArray([...Perguntas]);
         setPerguntasAleatorias(copia);
@@ -47,11 +55,24 @@ export default function Quiz({ setQuiz }) {
         setMidiasRestantes(shuffleArray([...todasMidias]));
     }, []);
 
+    // ⭐ Iniciar cronômetro da pergunta
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCronometroPergunta(c => c + 1);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // ⭐ Reset ao trocar de pergunta
     useEffect(() => {
         if (!PerguntasAleatorias.length) return;
 
+        setCronometroPergunta(0);
+
         const pergunta = PerguntasAleatorias[numeroPergunta];
         setAlternativasAtuais(shuffleArray([...pergunta.alternativas]));
+
         setVerificado(false);
         setMensagemFeedback("");
         setCorFeedback("");
@@ -77,7 +98,7 @@ export default function Quiz({ setQuiz }) {
                 const bytes = CryptoJS.AES.decrypt(respostaCriptografada, key);
                 const txt = bytes.toString(CryptoJS.enc.Utf8);
                 if (txt === key) return key;
-            } catch (e) { }
+            } catch { }
         }
         return null;
     }
@@ -102,13 +123,9 @@ export default function Quiz({ setQuiz }) {
             return;
         }
 
-        const idCorreto = encontrarIdCorreto(
-            respostaCriptografada,
-            alternativasAtuais
-        ) || encontrarIdCorreto(
-            respostaCriptografada,
-            PerguntasAleatorias[numeroPergunta].alternativas
-        );
+        const idCorreto =
+            encontrarIdCorreto(respostaCriptografada, alternativasAtuais) ||
+            encontrarIdCorreto(respostaCriptografada, PerguntasAleatorias[numeroPergunta].alternativas);
 
         const labelEscolhida = document.getElementById(`label-alternativa-${alternativaEscolhida}`);
         const labelCorreta = idCorreto ? document.getElementById(`label-alternativa-${idCorreto}`) : null;
@@ -121,6 +138,7 @@ export default function Quiz({ setQuiz }) {
             setMensagemFeedback("Resposta incorreta!");
             setCorFeedback("#FF4500");
             if (labelEscolhida) labelEscolhida.style.background = "#FF4500";
+            if (labelCorreta) labelCorreta.style.background = "#32CD32";
         } else {
             statusAtual[numeroPergunta] = "correta";
             acertou = true;
@@ -138,6 +156,9 @@ export default function Quiz({ setQuiz }) {
     function avancar() {
         resetLabels(alternativasAtuais);
 
+        // Salva tempo da pergunta atual
+        setTemposPerguntas(prev => [...prev, cronometroPergunta]);
+
         const proxima = numeroPergunta + 1;
 
         if (proxima >= PerguntasAleatorias.length) {
@@ -145,10 +166,14 @@ export default function Quiz({ setQuiz }) {
             const corretas = statusRespostas.filter(s => s === "correta").length;
             const erradas = statusRespostas.filter(s => s === "errada").length;
 
+            const totalTempo = [...temposPerguntas, cronometroPergunta]
+                .reduce((t, n) => t + n, 0);
+
             setQuiz({
                 status: "parabens",
                 corretas,
-                erradas
+                erradas,
+                tempoTotal: totalTempo
             });
 
             return;
@@ -175,8 +200,8 @@ export default function Quiz({ setQuiz }) {
                         style={{
                             background:
                                 status === "correta" ? "#32CD32" :
-                                    status === "errada" ? "#FF4500" :
-                                        "#404040"
+                                status === "errada" ? "#FF4500" :
+                                "#404040"
                         }}
                     />
                 ))}
@@ -189,6 +214,7 @@ export default function Quiz({ setQuiz }) {
                     ) : (
                         <video src={midiaAtual} autoPlay muted loop className="midia-pergunta" />
                     )}
+
                     {mensagemFeedback && (
                         <p style={{ color: corFeedback, fontWeight: 600 }}>
                             {mensagemFeedback}
@@ -197,7 +223,15 @@ export default function Quiz({ setQuiz }) {
                 </div>
             )}
 
-            <p className="p-numero-pergunta">Pergunta {numeroPergunta + 1}</p>
+            <header className="header">
+                <p className="p-numero-pergunta">Pergunta {numeroPergunta + 1}</p>
+
+                {/* ⭐ Cronômetro individual */}
+                <div className="cronometro">
+                    ⏱ {formatarTempo(cronometroPergunta)}
+                </div>
+            </header>
+
             <h1 className="titulo-pergunta">{perguntaAtual.titulo}</h1>
 
             <div className="div-alternativas">
