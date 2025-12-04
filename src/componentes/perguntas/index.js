@@ -23,6 +23,7 @@ function Login({ setUser }) {
 
   return (
     <div className="login-container">
+      <div className="login-content">
         <h2>Login</h2>
         <input
             type="email"
@@ -38,6 +39,7 @@ function Login({ setUser }) {
         />
         <button onClick={login}>Entrar</button>
         {erro && <p className="error">{erro}</p>}
+      </div>
     </div>
   );
 }

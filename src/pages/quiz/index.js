@@ -17,7 +17,7 @@ import gif from "../../componentes/gifs/1.mp4";
 import defeat from "../../componentes/gifs/defeat.mp4";
 import congrats from "../../componentes/gifs/congrats.mp4";
 
-export default function Quiz({ formatarTempo, setQuiz }) {
+export default function Quiz({ formatarTempo, setQuiz, userId }) {
     const [numeroPergunta, setNumeroPergunta] = useState(0);
     const [PerguntasAleatorias, setPerguntasAleatorias] = useState([]);
     const [alternativasAtuais, setAlternativasAtuais] = useState([]);
@@ -25,7 +25,7 @@ export default function Quiz({ formatarTempo, setQuiz }) {
     const [verificado, setVerificado] = useState(false);
     const [statusRespostas, setStatusRespostas] = useState([]);
     const [cronometroPergunta, setCronometroPergunta] = useState(0);
-    const [temposPerguntas, setTemposPerguntas] = useState([]);
+    const [respostasDetalhadas, setRespostasDetalhadas] = useState([]);
     const [midiaAtual, setMidiaAtual] = useState(null);
     const [mensagemFeedback, setMensagemFeedback] = useState("");
     const [corFeedback, setCorFeedback] = useState("");
@@ -41,7 +41,6 @@ export default function Quiz({ formatarTempo, setQuiz }) {
         return a;
     }
 
-    // ⭐ Carregar perguntas do Firestore (documento único)
     useEffect(() => {
         async function carregarPerguntas() {
             const docRef = doc(db, "perguntas", "todas");
@@ -60,13 +59,11 @@ export default function Quiz({ formatarTempo, setQuiz }) {
         carregarPerguntas();
     }, []);
 
-    // ⭐ Cronômetro por pergunta
     useEffect(() => {
         const interval = setInterval(() => setCronometroPergunta(c => c + 1), 1000);
         return () => clearInterval(interval);
     }, []);
 
-    // ⭐ Reset ao trocar de pergunta
     useEffect(() => {
         if (!PerguntasAleatorias.length) return;
 
@@ -134,6 +131,22 @@ export default function Quiz({ formatarTempo, setQuiz }) {
             if (labelCorreta) labelCorreta.style.background = "#32CD32";
         }
 
+        // ✅ Registrar resposta detalhada
+        setRespostasDetalhadas(prev => [
+            ...prev,
+            {
+                perguntaId: PerguntasAleatorias[numeroPergunta].id,
+                titulo: PerguntasAleatorias[numeroPergunta].titulo,
+                respostaSelecionada: alternativasAtuais.find(a => a.id === alternativaEscolhida)?.alternativa,
+                correta: acertou,
+                inicio: Date.now() - cronometroPergunta * 1000,
+                fim: Date.now(),
+                tempo: cronometroPergunta,
+                posicao: numeroPergunta + 1,
+                usuarioId: userId || null
+            }
+        ]);
+
         setMidiaAtual(acertou ? congrats : defeat);
         setStatusRespostas(statusAtual);
         setVerificado(true);
@@ -142,21 +155,20 @@ export default function Quiz({ formatarTempo, setQuiz }) {
 
     function avancar() {
         resetLabels(alternativasAtuais);
-        setTemposPerguntas(prev => [...prev, cronometroPergunta]);
         const proxima = numeroPergunta + 1;
 
         if (proxima >= PerguntasAleatorias.length) {
             const corretas = statusRespostas.filter(s => s === "correta").length;
             const erradas = statusRespostas.filter(s => s === "errada").length;
-            const totalTempo = [...temposPerguntas, cronometroPergunta].reduce((t, n) => t + n, 0);
+            const totalTempo = respostasDetalhadas.reduce((t, r) => t + r.tempo, 0);
 
-            setQuiz({ status: "parabens", corretas, erradas, tempoTotal: totalTempo });
+            setQuiz({ status: "parabens", corretas, erradas, tempoTotal: totalTempo, respostas: respostasDetalhadas });
             return;
         }
         setNumeroPergunta(proxima);
     }
 
-    if (!PerguntasAleatorias.length) return <div className="container-quiz">Carregando...</div>;
+    if (!PerguntasAleatorias.length) return <div className="loading-quiz">Carregando...</div>;
 
     const perguntaAtual = PerguntasAleatorias[numeroPergunta];
     const letras = ['A', 'B', 'C', 'D'];

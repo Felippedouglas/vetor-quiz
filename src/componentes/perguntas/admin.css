@@ -2,7 +2,6 @@
 .admin-perguntas-container {
     color: #f1f1f1;
     font-family: Arial, sans-serif;
-    position: relative;
 }
 
 .admin-perguntas-titulo {
@@ -217,10 +216,16 @@
     }
 }
 
-/* style.css */
 .login-container {
+    height: 90dvh;
+    display: flex;
+    align-items: center;
+}
+
+/* style.css */
+.login-content {
   max-width: 400px;
-  margin: 50px auto;
+  margin: auto;
   padding: 30px 20px;
   text-align: center;
   background: #1e1e1e;
@@ -230,13 +235,13 @@
   font-family: Arial, sans-serif;
 }
 
-.login-container h2 {
+.login-content h2 {
   margin-bottom: 20px;
   font-size: 28px;
   color: #f5f5f5;
 }
 
-.login-container input {
+.login-content input {
   width: 100%;
   margin-bottom: 15px;
   padding: 10px 12px;
@@ -247,11 +252,11 @@
   font-size: 16px;
 }
 
-.login-container input::placeholder {
+.login-content input::placeholder {
   color: #aaa;
 }
 
-.login-container button {
+.login-content button {
   width: 100%;
   padding: 10px;
   border: none;
@@ -263,11 +268,11 @@
   transition: background-color 0.3s ease;
 }
 
-.login-container button:hover {
+.login-content button:hover {
   background-color: #28a428;
 }
 
-.login-container p.error {
+.login-content p.error {
   color: #ff4500;
   margin-top: 10px;
   font-weight: 600;

@@ -143,15 +143,27 @@ footer {
     color: #ccc;
 }
 
+.container-tentar-novamente {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    height: 100dvh;
+}
+
 /* Tela de tentar novamente */
-.div-tentar-novamente {
+.content-tentar-novamente {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    margin: auto;
     padding: 50px 100px;
     background: #fff;
     color: #181818;
     border-radius: 5px;
+}
+
+.content-tentar-novamente h2 {
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 .div-tentar-novamente p {
@@ -291,15 +303,22 @@ footer {
     font-size: 1.2rem;
 }
 
+.home-side h4 {
+    text-align: center;
+    font-size: .7rem;
+}
+
 .ranking-item {
     display: flex;
     flex-direction: column;
     margin-bottom: 10px;
-    font-size: .9rem;
+    font-size: .8rem;
+    font-weight: 600;
 }
 
 .ranking-item .acertos-tempo {
-    font-size: .8rem;
+    font-size: .7rem;
+    font-weight: 500;
     color: #ccc;
 }
 

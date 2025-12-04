@@ -1,10 +1,21 @@
+.loading-quiz {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 90dvh;
+}
+
 /* Container principal */
 .container-quiz {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     background: #303030;
     min-width: 300px; /* menor largura para mobile */
     max-width: 800px;
+    height: 95dvh;
     padding: 50px 20px;
     margin: auto;
     border-radius: 5px;
