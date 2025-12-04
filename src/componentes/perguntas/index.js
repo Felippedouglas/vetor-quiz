@@ -1,232 +1,230 @@
-export const Perguntas = [
-    {
-        titulo: "Dados os vetores u =(2,−1,3) e v =(−4,5,1), qual é o valor do produto escalar u ⋅ v ?",
-        alternativas: [
-            {
-                alternativa: '10',
-                id: 1
-            },
-            {
-                alternativa: '0',
-                id: 2
-            },
-            {
-                alternativa: '-10',
-                id: 3
-            },
-            {
-                alternativa: '-13',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX1+ld1yOu+/weSfF3R1vlcjVwY5rvFCNqko=",
+// AdminProtected.js
+import { useState, useEffect } from "react";
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import CryptoJS from "crypto-js";
+import { auth, db } from "../../firebase";
+import "./admin.css";
 
-    },
-    {
-        titulo: 'O vetor w = (k, 2, -3) é ortogonal ao vetor z = (1, 5, k). Qual deve ser o valor de k para que isso ocorra?',
-        alternativas: [
-            {
-                alternativa: 'k = 5',
-                id: 1
-            },
-            {
-                alternativa: 'k = -10',
-                id: 2
-            },
-            {
-                alternativa: 'k = -5',
-                id: 3
-            },
-            {
-                alternativa: 'k = 10',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX1+8QhRaaHO4Xdvepq3+BU6HWvw2NqVd3g4=",
+// Componente de login
+function Login({ setUser }) {
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState("");
 
-    },
-    {
-        titulo: 'Calcule o módulo (norma) do vetor a = (4, -3, 0).',
-        alternativas: [
-            {
-                alternativa: '0',
-                id: 1
-            },
-            {
-                alternativa: '7',
-                id: 2
-            },
-            {
-                alternativa: '5',
-                id: 3
-            },
-            {
-                alternativa: 'raiz de 7',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX18y63gKtPowkzJw80K1ytQNTrjD2sjni0o=",
+  const login = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      setUser(userCredential.user);
+    } catch (err) {
+      setErro("E-mail ou senha inválidos");
+    }
+  };
 
-    },
-    {
-        titulo: 'Se o produto escalar entre dois vetores unitários u e v é 1/2, qual o ângulo θ entre eles?',
-        alternativas: [
-            {
-                alternativa: '60°',
-                id: 1
-            },
-            {
-                alternativa: '90°',
-                id: 2
-            },
-            {
-                alternativa: '35°',
-                id: 3
-            },
-            {
-                alternativa: '30°',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX19cCJWeS8oLPBAKyIJ9U8wv7y7Un1xXmQ0=",
+  return (
+    <div className="login-container">
+        <h2>Login</h2>
+        <input
+            type="email"
+            placeholder="E-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+            type="password"
+            placeholder="Senha"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+        />
+        <button onClick={login}>Entrar</button>
+        {erro && <p className="error">{erro}</p>}
+    </div>
+  );
+}
 
-    },
-    {
-        titulo: 'Qual é o valor da componente escalar do vetor a =(3,4) sobre o vetor b =(1,0)?',
-        alternativas: [
-            {
-                alternativa: '5',
-                id: 1
-            },
-            {
-                alternativa: '3',
-                id: 2
-            },
-            {
-                alternativa: '3/5',
-                id: 3
-            },
-            {
-                alternativa: '4',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX1/RIzfRvzw4kReU9rffFlJrbKFOEESbNkc=",
+// Componente Admin
+function Admin() {
+  const [lista, setLista] = useState([]);
+  const [titulo, setTitulo] = useState("");
+  const [alternativas, setAlternativas] = useState(["", "", "", ""]);
+  const [resposta, setResposta] = useState("");
+  const [editIndex, setEditIndex] = useState(null);
+  const [adicionando, setAdicionando] = useState(false); // para controlar formulário de nova pergunta
+  const perguntasDocRef = doc(db, "perguntas", "todas");
 
-    },
-    {
-        titulo: 'Qual das seguintes afirmações sobre o produto escalar u ⋅ v é falsa?',
-        alternativas: [
-            {
-                alternativa: 'O produto escalar entre u e v resulta em um vetor.',
-                id: 1
-            },
-            {
-                alternativa: 'O produto escalar é comutativo, ou seja, u · v = v · u.',
-                id: 2
-            },
-            {
-                alternativa: 'C. Se u ⋅ v =0, os vetores u e v são ortogonais (se forem não nulos).',
-                id: 3
-            },
-            {
-                alternativa: 'O produto escalar é distributivo em relação à soma de vetores: u ⋅( v + w )= u ⋅ v + u ⋅ w .',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX1871dICMI4uHojL91Cwd1kk6eoF1FSLvAo=",
+  // Buscar perguntas do Firestore
+  useEffect(() => {
+    const fetchPerguntas = async () => {
+      try {
+        const snap = await getDoc(perguntasDocRef);
+        if (snap.exists()) {
+          setLista(snap.data().perguntas);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar perguntas:", err);
+      }
+    };
+    fetchPerguntas();
+  }, []);
 
-    },
-    {
-        titulo: 'Um vetor AB com ponto inicial A(1, 2, 3) e ponto final B(4, 5, 6) é representado pelas suas componentes. Quais são as componentes de AB?',
-        alternativas: [
-            {
-                alternativa: '(3,3,3)',
-                id: 1
-            },
-            {
-                alternativa: '(4,5,6)',
-                id: 2
-            },
-            {
-                alternativa: '(5,7,9)',
-                id: 3
-            },
-            {
-                alternativa: '(-3,-3,-3)',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX1+lJMcOwiJZ525RidjYfJaJnPeXbpyBrVI=",
+  // Atualizar Firestore
+  const atualizarFirestore = async (novaLista) => {
+    try {
+      await setDoc(perguntasDocRef, { perguntas: novaLista });
+    } catch (err) {
+      console.error("Erro ao atualizar Firestore:", err);
+    }
+  };
 
-    },
-    {
-        titulo: 'Se a projeção ortogonal do vetor a sobre b é o vetor nulo (ou seja, proj₍b₎ a = 0), o que podemos afirmar sobre a relação entre a e b (assumindo que a ≠ 0 e b ≠ 0)?',
-        alternativas: [
-            {
-                alternativa: 'Os vetores são ortogonais.',
-                id: 1
-            },
-            {
-                alternativa: 'O módulo de a é igual ao módulo de b',
-                id: 2
-            },
-            {
-                alternativa: 'O produto escalar a · b é positivo.',
-                id: 3
-            },
-            {
-                alternativa: 'Os vetores são paralelos.',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX1/ISzTy1El0SuO1JY5HB0vsV9vMnynuRQA=",
+  function atualizarAlternativa(index, valor) {
+    const nova = [...alternativas];
+    nova[index] = valor;
+    setAlternativas(nova);
+  }
 
-    },
-    {
-        titulo: 'Qual é o vetor projeção ortogonal de u = (1,1) sobre v = (2,0)?',
-        alternativas: [
-            {
-                alternativa: '1/2',
-                id: 1
-            },
-            {
-                alternativa: '(1/2,1/2)',
-                id: 2
-            },
-            {
-                alternativa: '(2,2)',
-                id: 3
-            },
-            {
-                alternativa: '(1,0)',
-                id: 4
-            }
-        ],
-        resposta: "U2FsdGVkX19irrOZkhhEs9c1yOIFVxxKk9pvheiEvEI=",
+  function criptografarID(id) {
+    return CryptoJS.AES.encrypt(id.toString(), id.toString()).toString();
+  }
 
-    },
-    /*{
-        titulo: '',
-        alternativas: [
-            {
-                alternativa: '',
-                id: 1
-            },
-            {
-                alternativa: '',
-                id: 2
-            },
-            {
-                alternativa: '',
-                id: 3
-            },
-            {
-                alternativa: '',
-                id: 4
-            }
-        ],
-        resposta: 1,
+  function iniciarEdicao(index) {
+    const p = lista[index];
+    setTitulo(p.titulo);
+    setAlternativas(p.alternativas.map(a => a.alternativa));
 
-    },*/
-]
+    let idCorreta = "";
+    for (let alt of p.alternativas) {
+      try {
+        const tentativa = CryptoJS.AES.decrypt(p.resposta, alt.id.toString()).toString(CryptoJS.enc.Utf8);
+        if (tentativa === alt.id.toString()) {
+          idCorreta = alt.id.toString();
+          break;
+        }
+      } catch {}
+    }
+    setResposta(idCorreta);
+    setEditIndex(index);
+    setAdicionando(false);
+  }
+
+  function adicionarPergunta() {
+    setTitulo("");
+    setAlternativas(["", "", "", ""]);
+    setResposta("");
+    setEditIndex(null);
+    setAdicionando(true);
+  }
+
+  function voltar() {
+    setTitulo("");
+    setAlternativas(["", "", "", ""]);
+    setResposta("");
+    setEditIndex(null);
+    setAdicionando(false);
+  }
+
+  function salvar() {
+    // validação obrigatória
+    if (!titulo.trim() || alternativas.some(a => !a.trim()) || !resposta) {
+      return alert("Preencha o título, todas as alternativas e selecione a correta.");
+    }
+
+    const alts = alternativas.map((alt, i) => ({ alternativa: alt, id: i + 1 }));
+    const alternativaCorreta = alts.find(a => a.id.toString() === resposta);
+    const cript = criptografarID(alternativaCorreta.id);
+
+    const obj = { titulo, alternativas: alts, resposta: cript };
+    const novaLista = editIndex !== null
+      ? lista.map((p, i) => (i === editIndex ? obj : p))
+      : [...lista, obj];
+
+    setLista(novaLista);
+    atualizarFirestore(novaLista);
+    voltar();
+  }
+
+  function remover(index) {
+    if (!window.confirm("Tem certeza que deseja excluir esta pergunta?")) return;
+    const nova = lista.filter((_, i) => i !== index);
+    setLista(nova);
+    atualizarFirestore(nova);
+  }
+
+  return (
+    <div className="admin-perguntas-container">
+      <h2 className="admin-perguntas-titulo">
+        {(editIndex !== null || adicionando) ? (
+          <button className="admin-perguntas-btn-voltar" onClick={voltar}>Voltar</button>
+        ) : <button className="admin-perguntas-btn-voltar" onClick={()=>window.location.href = "/"}>Voltar</button>}
+        <span>Gerenciar Perguntas</span>
+        <div></div>
+      </h2>
+
+      {editIndex !== null || adicionando ? (
+        <div className="admin-perguntas-form-container">
+          <textarea className="admin-perguntas-input" placeholder="Título da pergunta" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          <div className="admin-perguntas-alts">
+            {alternativas.map((a, i) => {
+              const selecionada = resposta == i + 1;
+              return (
+                <input key={i} className={`admin-perguntas-input alt-input ${selecionada ? "alt-selecionada" : ""}`} placeholder={`Alternativa ${i + 1}`} value={a} onChange={(e) => atualizarAlternativa(i, e.target.value)} />
+              );
+            })}
+          </div>
+          <div className="admin-perguntas-select-resposta">
+            <p>Selecione a alternativa correta:</p>
+            {alternativas.map((a, i) => {
+              const letra = String.fromCharCode(65 + i);
+              const selecionada = resposta == i + 1;
+              return (
+                <label key={i} className={`admin-perguntas-label-resp ${selecionada ? "resp-selecionada" : ""}`}>
+                  <input type="radio" name="correta" value={i + 1} checked={selecionada} onChange={(e) => setResposta(e.target.value)} />
+                  <span className="resp-letra">{letra})</span>
+                  {a || `Alternativa ${letra}`}
+                </label>
+              );
+            })}
+          </div>
+          <button className="admin-perguntas-btn" onClick={salvar}>{adicionando ? "Adicionar Pergunta" : "Salvar Edição"}</button>
+        </div>
+      ) : (
+        <div>
+          <button className="admin-perguntas-btn" onClick={adicionarPergunta}>Adicionar Nova Pergunta</button>
+          <div className="admin-perguntas-lista">
+            {lista.map((p, i) => (
+              <div key={i} className="admin-perguntas-item">
+                <p><b>{i + 1}.</b> {p.titulo}</p>
+                <div>
+                    <button className="admin-perguntas-btn-edit" onClick={() => iniciarEdicao(i)}>Editar</button>
+                    <button className="admin-perguntas-btn-del" onClick={() => remover(i)}>Excluir</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Componente final protegido por login
+export default function AdminProtected() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (usr) => {
+      setUser(usr);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) return <p>Carregando...</p>;
+  if (!user) return <Login setUser={setUser} />;
+
+  return (
+    <div>
+      <Admin />
+    </div>
+  );
+}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import Quiz from "../quiz";
-import { addDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
+import { addDoc, collection, query, orderBy, onSnapshot} from "firebase/firestore";
 import './style.css'
-import { db } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Home() {
     const [quiz, setQuiz] = useState(false);
@@ -11,6 +12,14 @@ export default function Home() {
     const [nome, setNome] = useState("");
     const [inicio, setInicio] = useState(null);
     const [cronometro, setCronometro] = useState(0);
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        });
+        return () => unsubscribe();
+    }, []);
 
     // Início do cronômetro
     useEffect(() => {
@@ -68,12 +77,32 @@ export default function Home() {
         const seg = segundos % 60;
         return `${min}m ${seg}s`;
     }
+/*
+    useEffect(()=>{
+        
+async function enviarPerguntasUnicoDocumento() {
+  try {
+    const perguntasDoc = Perguntas.map(p => ({
+      titulo: p.titulo,
+      alternativas: p.alternativas.map(a => ({ alternativa: a.alternativa, id: a.id })),
+      resposta: p.resposta // já criptografada ou criptografe aqui
+    }));
 
+    await setDoc(doc(db, "perguntas", "todas"), { perguntas: perguntasDoc });
+    console.log("Todas as perguntas foram enviadas com sucesso!");
+  } catch (error) {
+    console.error("Erro ao enviar perguntas:", error);
+  }
+}
+
+enviarPerguntasUnicoDocumento();
+    }, [])
+*/
     return (
-        <>
+        <div className="home-container">
             {/* TELA INICIAL COM SIDE RANKING */}
             {!quiz && (
-                <div className="home-container">
+                <div className="home-content">
                     
                     {/* Lado esquerdo: nome e botões */}
                     <div className="home-left">
@@ -183,7 +212,7 @@ export default function Home() {
 
                     {ranking.map((r, i) => (
                         <p key={r.id}>
-                            <strong>{i + 1}º</strong> - {r.nome.length > 15 ? r.nome.slice(0, 10) + "..." : r.nome} • {r.corretas} acertos • {r.tempo}s
+                            <strong>{i + 1}º</strong> - {r.nome.length > 15 ? r.nome.slice(0, 10) + "..." : r.nome} • {r.corretas} acertos • {formatarTempo(r.tempo)}
                         </p>
                     ))}
 
@@ -192,6 +221,15 @@ export default function Home() {
                     </button>
                 </div>
             )}
-        </>
+
+            {user && (
+                <button
+                    className="btn-admin-flutuante"
+                    onClick={() => window.location.href = "/admin"}
+                >
+                    ⚙️ ADMINISTRADOR
+                </button>
+            )}
+        </div>
     );
 }

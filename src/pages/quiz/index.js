@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Perguntas } from "../../componentes/perguntas";
 import CryptoJS from "crypto-js";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 import './style.css';
 
 import gif1 from "../../componentes/gifs/1.gif";
@@ -17,24 +18,17 @@ import defeat from "../../componentes/gifs/defeat.mp4";
 import congrats from "../../componentes/gifs/congrats.mp4";
 
 export default function Quiz({ formatarTempo, setQuiz }) {
-
     const [numeroPergunta, setNumeroPergunta] = useState(0);
     const [PerguntasAleatorias, setPerguntasAleatorias] = useState([]);
     const [alternativasAtuais, setAlternativasAtuais] = useState([]);
     const [locked, setLocked] = useState(false);
     const [verificado, setVerificado] = useState(false);
     const [statusRespostas, setStatusRespostas] = useState([]);
-
-    // ⭐ Cronômetro individual por pergunta
     const [cronometroPergunta, setCronometroPergunta] = useState(0);
-
-    // ⭐ Guarda o tempo total somado
     const [temposPerguntas, setTemposPerguntas] = useState([]);
-
     const [midiaAtual, setMidiaAtual] = useState(null);
     const [mensagemFeedback, setMensagemFeedback] = useState("");
     const [corFeedback, setCorFeedback] = useState("");
-
     const todasMidias = [gif1, gif2, gif3, gif4, gif5, gif6, gif7, gif8, gif9, gif];
     const [midiasRestantes, setMidiasRestantes] = useState([]);
 
@@ -47,20 +41,28 @@ export default function Quiz({ formatarTempo, setQuiz }) {
         return a;
     }
 
-    // ⭐ Iniciar perguntas
+    // ⭐ Carregar perguntas do Firestore (documento único)
     useEffect(() => {
-        const copia = shuffleArray([...Perguntas]);
-        setPerguntasAleatorias(copia);
-        setStatusRespostas(new Array(copia.length).fill("neutra"));
-        setMidiasRestantes(shuffleArray([...todasMidias]));
+        async function carregarPerguntas() {
+            const docRef = doc(db, "perguntas", "todas");
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const perguntasDB = docSnap.data().perguntas || [];
+                const copia = shuffleArray(perguntasDB);
+                setPerguntasAleatorias(copia);
+                setStatusRespostas(new Array(copia.length).fill("neutra"));
+                setMidiasRestantes(shuffleArray([...todasMidias]));
+            } else {
+                console.error("Documento de perguntas não encontrado!");
+            }
+        }
+        carregarPerguntas();
     }, []);
 
-    // ⭐ Iniciar cronômetro da pergunta
+    // ⭐ Cronômetro por pergunta
     useEffect(() => {
-        const interval = setInterval(() => {
-            setCronometroPergunta(c => c + 1);
-        }, 1000);
-
+        const interval = setInterval(() => setCronometroPergunta(c => c + 1), 1000);
         return () => clearInterval(interval);
     }, []);
 
@@ -69,10 +71,8 @@ export default function Quiz({ formatarTempo, setQuiz }) {
         if (!PerguntasAleatorias.length) return;
 
         setCronometroPergunta(0);
-
         const pergunta = PerguntasAleatorias[numeroPergunta];
         setAlternativasAtuais(shuffleArray([...pergunta.alternativas]));
-
         setVerificado(false);
         setMensagemFeedback("");
         setCorFeedback("");
@@ -84,20 +84,16 @@ export default function Quiz({ formatarTempo, setQuiz }) {
 
         let restante = [...midiasRestantes];
         if (restante.length === 0) restante = shuffleArray([...todasMidias]);
-
-        const midiaEscolhida = restante.shift();
-        setMidiaAtual(midiaEscolhida);
+        setMidiaAtual(restante.shift());
         setMidiasRestantes(restante);
-
     }, [numeroPergunta, PerguntasAleatorias]);
 
     function encontrarIdCorreto(respostaCriptografada, alternativas) {
         for (let alt of alternativas) {
-            const key = String(alt.id);
             try {
-                const bytes = CryptoJS.AES.decrypt(respostaCriptografada, key);
+                const bytes = CryptoJS.AES.decrypt(respostaCriptografada, String(alt.id));
                 const txt = bytes.toString(CryptoJS.enc.Utf8);
-                if (txt === key) return key;
+                if (txt === String(alt.id)) return String(alt.id);
             } catch { }
         }
         return null;
@@ -114,19 +110,10 @@ export default function Quiz({ formatarTempo, setQuiz }) {
         if (locked || verificado) return;
 
         setLocked(true);
+        const alternativaEscolhida = document.querySelector('input[name="alternativa"]:checked')?.value;
+        if (!alternativaEscolhida) { setLocked(false); return; }
 
-        const alternativaEscolhida =
-            document.querySelector('input[name="alternativa"]:checked')?.value;
-
-        if (!alternativaEscolhida) {
-            setLocked(false);
-            return;
-        }
-
-        const idCorreto =
-            encontrarIdCorreto(respostaCriptografada, alternativasAtuais) ||
-            encontrarIdCorreto(respostaCriptografada, PerguntasAleatorias[numeroPergunta].alternativas);
-
+        const idCorreto = encontrarIdCorreto(respostaCriptografada, alternativasAtuais);
         const labelEscolhida = document.getElementById(`label-alternativa-${alternativaEscolhida}`);
         const labelCorreta = idCorreto ? document.getElementById(`label-alternativa-${idCorreto}`) : null;
 
@@ -155,43 +142,27 @@ export default function Quiz({ formatarTempo, setQuiz }) {
 
     function avancar() {
         resetLabels(alternativasAtuais);
-
-        // Salva tempo da pergunta atual
         setTemposPerguntas(prev => [...prev, cronometroPergunta]);
-
         const proxima = numeroPergunta + 1;
 
         if (proxima >= PerguntasAleatorias.length) {
-
             const corretas = statusRespostas.filter(s => s === "correta").length;
             const erradas = statusRespostas.filter(s => s === "errada").length;
+            const totalTempo = [...temposPerguntas, cronometroPergunta].reduce((t, n) => t + n, 0);
 
-            const totalTempo = [...temposPerguntas, cronometroPergunta]
-                .reduce((t, n) => t + n, 0);
-
-            setQuiz({
-                status: "parabens",
-                corretas,
-                erradas,
-                tempoTotal: totalTempo
-            });
-
+            setQuiz({ status: "parabens", corretas, erradas, tempoTotal: totalTempo });
             return;
         }
-
         setNumeroPergunta(proxima);
     }
 
-    if (!PerguntasAleatorias.length) {
-        return <div className="container-quiz">Carregando...</div>;
-    }
+    if (!PerguntasAleatorias.length) return <div className="container-quiz">Carregando...</div>;
 
     const perguntaAtual = PerguntasAleatorias[numeroPergunta];
     const letras = ['A', 'B', 'C', 'D'];
 
     return (
         <div className="container-quiz">
-
             <div className="barra-progresso">
                 {statusRespostas.map((status, idx) => (
                     <div
@@ -214,7 +185,6 @@ export default function Quiz({ formatarTempo, setQuiz }) {
                     ) : (
                         <video src={midiaAtual} autoPlay muted loop className="midia-pergunta" />
                     )}
-
                     {mensagemFeedback && (
                         <p style={{ color: corFeedback, fontWeight: 600 }}>
                             {mensagemFeedback}
@@ -225,11 +195,7 @@ export default function Quiz({ formatarTempo, setQuiz }) {
 
             <header className="header">
                 <p className="p-numero-pergunta">Pergunta {numeroPergunta + 1}</p>
-
-                {/* ⭐ Cronômetro individual */}
-                <div className="cronometro">
-                    ⏱ {formatarTempo(cronometroPergunta)}
-                </div>
+                <div className="cronometro">⏱ {formatarTempo(cronometroPergunta)}</div>
             </header>
 
             <h1 className="titulo-pergunta">{perguntaAtual.titulo}</h1>
