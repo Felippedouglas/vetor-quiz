@@ -173,7 +173,7 @@ function Admin() {
             })}
           </div>
           <div className="admin-perguntas-select-resposta">
-            <p>Selecione a alternativa correta:</p>
+            <p>Determine qual será a alternativa correta:</p>
             {alternativas.map((a, i) => {
               const letra = String.fromCharCode(65 + i);
               const selecionada = resposta == i + 1;

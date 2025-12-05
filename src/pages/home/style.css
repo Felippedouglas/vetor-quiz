@@ -261,6 +261,18 @@ footer {
     display: flex;
 }
 
+.auto-login-content {
+    margin: auto;
+}
+
+.auto-login-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+}
+
 /* LAYOUT INICIAL COM SIDE */
 .home-content {
     display: flex;

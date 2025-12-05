@@ -4,6 +4,8 @@ import { addDoc, collection, query, orderBy, onSnapshot } from "firebase/firesto
 import './style.css';
 import { auth, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default function Home() {
     const [quiz, setQuiz] = useState(false);
@@ -14,6 +16,44 @@ export default function Home() {
     const [cronometro, setCronometro] = useState(0);
     const [user, setUser] = useState(null);
     const [respostasDetalhadas, setRespostasDetalhadas] = useState([]);
+
+    const [carregandoLogin, setCarregandoLogin] = useState(false);
+
+    useEffect(() => {
+        async function fazerLoginAutomatico() {
+            const params = new URLSearchParams(window.location.search);
+            const codigo = params.get("code");
+
+            if (!codigo) return;
+
+            setCarregandoLogin(true);
+
+            try {
+                const docRef = doc(db, "logins", codigo);
+                const snap = await getDoc(docRef);
+
+                if (!snap.exists()) {
+                    setCarregandoLogin(false);
+                    return;
+                }
+
+                const { email, senha } = snap.data();
+
+                // Login no Firebase
+                await signInWithEmailAndPassword(auth, email, senha);
+
+                // Excluir documento após login
+                await deleteDoc(docRef);
+
+            } catch (err) {
+                console.log("Erro ao fazer login automático:", err);
+            }
+
+            setCarregandoLogin(false);
+        }
+
+        fazerLoginAutomatico();
+    }, []);
 
     // Monitorar usuário logado
     useEffect(() => {
@@ -106,8 +146,23 @@ export default function Home() {
         return `${min}m ${seg}s`;
     }
 
+    if (carregandoLogin) {
+        return (
+            <div className="auto-login-content">
+                <p className="auto-login-message">Conectando conta de administrador... aguarde!</p>
+            </div>
+        );
+    }
+
     return (
         <div className="home-container">
+
+            {carregandoLogin && (
+                <div className="auto-login-content">
+                    <p className="auto-login-message">Conectando conta de administrador... aguarde!</p>
+                </div>
+            )}
+
             {/* Tela inicial */}
             {!quiz && (
                 <div className="home-content">
@@ -222,13 +277,14 @@ export default function Home() {
                     </div>
                 </div>
             )}
-
-            <button
-                className="btn-admin-flutuante"
-                onClick={() => window.location.href = "/admin"}
-            >
-                ⚙️ ADMIN
-            </button>
+            {user?.uid &&
+                <button
+                    className="btn-admin-flutuante"
+                    onClick={() => window.location.href = "/admin"}
+                >
+                    ⚙️ ADMIN
+                </button>
+            }
         </div>
     );
 }
