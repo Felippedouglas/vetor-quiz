@@ -20,7 +20,10 @@ export default function Home() {
     const [carregandoLogin, setCarregandoLogin] = useState(false);
 
     useEffect(() => {
-        async function fazerLoginAutomatico() {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            // Se já estiver logado, não faz login automático
+            if (user) return;
+
             const params = new URLSearchParams(window.location.search);
             const codigo = params.get("code");
 
@@ -50,9 +53,9 @@ export default function Home() {
             }
 
             setCarregandoLogin(false);
-        }
+        });
 
-        fazerLoginAutomatico();
+        return () => unsubscribe();
     }, []);
 
     // Monitorar usuário logado
