@@ -4,6 +4,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import './style.css';
 
+import { MathJax, MathJaxContext } from "better-react-mathjax";
+
 import gif1 from "../../componentes/gifs/1.gif";
 import gif2 from "../../componentes/gifs/2.gif";
 import gif3 from "../../componentes/gifs/3.gif";
@@ -173,80 +175,76 @@ export default function Quiz({ formatarTempo, setQuiz, userId }) {
     const perguntaAtual = PerguntasAleatorias[numeroPergunta];
     const letras = ['A', 'B', 'C', 'D'];
 
+    const config = {
+        loader: { load: ["input/asciimath", "output/chtml", "ui/menu"] },
+        tex: {
+            inlineMath: [["$", "$"], ["\\(", "\\)"]],
+            displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+        }
+    };
+
     return (
-        <div className="container-quiz">
-            <div className="barra-progresso">
-                {statusRespostas.map((status, idx) => (
-                    <div
-                        key={idx}
-                        className="barra-label"
-                        style={{
-                            background:
-                                status === "correta" ? "#32CD32" :
-                                status === "errada" ? "#FF4500" :
-                                "#404040"
-                        }}
-                    />
-                ))}
-            </div>
-
-            {midiaAtual && (
-                <div className="midia-container">
-                    {midiaAtual.endsWith(".gif") ? (
-                        <img src={midiaAtual} className="midia-pergunta" />
-                    ) : (
-                        <video src={midiaAtual} autoPlay muted loop className="midia-pergunta" />
-                    )}
-                    {mensagemFeedback && (
-                        <p style={{ color: corFeedback, fontWeight: 600 }}>
-                            {mensagemFeedback}
-                        </p>
-                    )}
-                </div>
-            )}
-
-            <header className="header">
-                <p className="p-numero-pergunta">Pergunta {numeroPergunta + 1}</p>
-                <div className="cronometro">⏱ {formatarTempo(cronometroPergunta)}</div>
-            </header>
-
-            <h1 className="titulo-pergunta">{perguntaAtual.titulo}</h1>
-
-            <div className="div-alternativas">
-                {alternativasAtuais.map((alternativa, i) => (
-                    <div key={i} className="alternativa">
-                        <input
-                            type="radio"
-                            name="alternativa"
-                            id={`alternativa-${alternativa.id}`}
-                            value={alternativa.id}
-                            className="input-alternativa"
-                            disabled={verificado}
+        <MathJaxContext config={config}>
+            <div className="container-quiz">
+                <div className="barra-progresso">
+                    {statusRespostas.map((status, idx) => (
+                        <div key={idx} className="barra-label"
+                            style={{ background: status === "correta" ? "#32CD32" : status === "errada" ? "#FF4500" : "#404040" }}
                         />
-                        <label id={`label-alternativa-${alternativa.id}`} htmlFor={`alternativa-${alternativa.id}`}>
-                            {letras[i]}) {alternativa.alternativa}
-                        </label>
+                    ))}
+                </div>
+
+                {midiaAtual && (
+                    <div className="midia-container">
+                        {midiaAtual.endsWith(".gif") ? (
+                            <img src={midiaAtual} className="midia-pergunta" alt="feedback" />
+                        ) : (
+                            <video src={midiaAtual} autoPlay muted loop className="midia-pergunta" />
+                        )}
+                        {mensagemFeedback && (
+                            <p style={{ color: corFeedback, fontWeight: 600 }}>{mensagemFeedback}</p>
+                        )}
                     </div>
-                ))}
-            </div>
+                )}
 
-            <div className="botoes-controle">
-                <button
-                    className="bt-responder"
-                    disabled={verificado}
-                    onClick={() => VerificarResposta(perguntaAtual.resposta)}
-                >
-                    Responder
-                </button>
+                <header className="header">
+                    <p className="p-numero-pergunta">Pergunta {numeroPergunta + 1}</p>
+                    <div className="cronometro">⏱ {formatarTempo(cronometroPergunta)}</div>
+                </header>
 
-                <button
-                    className="bt-avancar"
-                    disabled={!verificado}
-                    onClick={avancar}
-                >
-                    Próxima
-                </button>
+                {/* Título com Suporte a LaTeX */}
+                <h1 className="titulo-pergunta">
+                    <MathJax dynamic display>{perguntaAtual.titulo}</MathJax>
+                </h1>
+
+                <div className="div-alternativas">
+                    {alternativasAtuais.map((alternativa, i) => (
+                        <div key={i} className="alternativa">
+                            <input
+                                type="radio"
+                                name="alternativa"
+                                id={`alternativa-${alternativa.id}`}
+                                value={alternativa.id}
+                                className="input-alternativa"
+                                disabled={verificado}
+                            />
+                            <label id={`label-alternativa-${alternativa.id}`} htmlFor={`alternativa-${alternativa.id}`}>
+                                <span>{letras[i]}) </span>
+                                <MathJax dynamic display>{alternativa.alternativa}</MathJax>
+                            </label>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="botoes-controle">
+                    <button className="bt-responder" disabled={verificado} onClick={() => VerificarResposta(perguntaAtual.resposta)}>
+                        Responder
+                    </button>
+                    <button className="bt-avancar" disabled={!verificado} onClick={avancar}>
+                        Próxima
+                    </button>
+                </div>
             </div>
-        </div>
+        </MathJaxContext>
     );
 }

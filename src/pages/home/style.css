@@ -322,10 +322,17 @@ footer {
 
 .ranking-item {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
+    padding: 5px 0;
     font-size: .8rem;
     font-weight: 600;
+}
+
+.ranking-item section {
+    display: flex;
+    flex-direction: column;
 }
 
 .ranking-item .acertos-tempo {
@@ -375,8 +382,34 @@ footer {
     background-color: #00538a;
 }
 
+.btn-remover-ranking {
+    align-self: flex-end;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 60, 60, 0.15);
+    color: #ff3c3c;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s ease;
+}
 
-/* Mobile */
+.btn-remover-ranking:hover {
+    background: #ff3c3c;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.btn-remover-ranking:active {
+    transform: scale(0.95);
+}
+
+
 @media (max-width: 800px) {
     .home-content {
         flex-direction: column;
@@ -386,5 +419,12 @@ footer {
     .home-side {
         width: 100%;
         max-height: 250px;
+    }
+
+    
+    .btn-remover-ranking {
+        width: 24px;
+        height: 24px;
+        font-size: .75rem;
     }
 }

@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import CryptoJS from "crypto-js";
 import { auth, db } from "../../firebase";
 import "./admin.css";
+import { MathJax, MathJaxContext } from "better-react-mathjax";
 
 // Componente de login
 function Login({ setUser }) {
@@ -151,60 +152,94 @@ function Admin() {
     atualizarFirestore(nova);
   }
 
-  return (
-    <div className="admin-perguntas-container">
-      <h2 className="admin-perguntas-titulo">
-        {(editIndex !== null || adicionando) ? (
-          <button className="admin-perguntas-btn-voltar" onClick={voltar}>Voltar</button>
-        ) : <button className="admin-perguntas-btn-voltar" onClick={()=>window.location.href = "/"}>Voltar</button>}
-        <span>Gerenciar Perguntas</span>
-        <div></div>
-      </h2>
+  const config = {
+    loader: { load: ["input/asciimath", "output/chtml", "ui/menu"] },
+    tex: {
+      inlineMath: [["$", "$"], ["\\(", "\\)"]],
+      displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+    }
+  };
 
-      {editIndex !== null || adicionando ? (
-        <div className="admin-perguntas-form-container">
-          <textarea className="admin-perguntas-input" placeholder="Título da pergunta" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-          <div className="admin-perguntas-alts">
-            {alternativas.map((a, i) => {
-              const selecionada = resposta == i + 1;
-              return (
-                <input key={i} className={`admin-perguntas-input alt-input ${selecionada ? "alt-selecionada" : ""}`} placeholder={`Alternativa ${i + 1}`} value={a} onChange={(e) => atualizarAlternativa(i, e.target.value)} />
-              );
-            })}
-          </div>
-          <div className="admin-perguntas-select-resposta">
-            <p>Determine qual será a alternativa correta:</p>
-            {alternativas.map((a, i) => {
-              const letra = String.fromCharCode(65 + i);
-              const selecionada = resposta == i + 1;
-              return (
-                <label key={i} className={`admin-perguntas-label-resp ${selecionada ? "resp-selecionada" : ""}`}>
-                  <input type="radio" name="correta" value={i + 1} checked={selecionada} onChange={(e) => setResposta(e.target.value)} />
-                  <span className="resp-letra">{letra})</span>
-                  {a || `Alternativa ${letra}`}
-                </label>
-              );
-            })}
-          </div>
-          <button className="admin-perguntas-btn" onClick={salvar}>{adicionando ? "Adicionar Pergunta" : "Salvar Edição"}</button>
-        </div>
-      ) : (
-        <div>
-          <button className="admin-perguntas-btn" onClick={adicionarPergunta}>Adicionar Nova Pergunta</button>
-          <div className="admin-perguntas-lista">
-            {lista.map((p, i) => (
-              <div key={i} className="admin-perguntas-item">
-                <p><b>{i + 1}.</b> {p.titulo}</p>
-                <div>
-                    <button className="admin-perguntas-btn-edit" onClick={() => iniciarEdicao(i)}>Editar</button>
-                    <button className="admin-perguntas-btn-del" onClick={() => remover(i)}>Excluir</button>
+  return (
+    <MathJaxContext config={config}>
+      <div className="admin-perguntas-container">
+        <h2 className="admin-perguntas-titulo">
+          {(editIndex !== null || adicionando) ? (
+            <button className="admin-perguntas-btn-voltar" onClick={voltar}>Voltar</button>
+          ) : <button className="admin-perguntas-btn-voltar" onClick={()=>window.location.href = "/"}>Voltar</button>}
+          <span>Gerenciar Perguntas</span>
+          <div></div>
+        </h2>
+
+        {editIndex !== null || adicionando ? (
+          <div className="admin-perguntas-form-container">
+            <textarea
+              className="admin-perguntas-input"
+              placeholder="Título da pergunta (Suporta LaTeX: $...$)"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+            />
+
+            {/* Preview dinâmico do Título */}
+            <div className="preview-latex">
+              <strong>Preview do Título:</strong>
+              {/* Adicione a prop display aqui */}
+              <MathJax dynamic display>{titulo || "..."}</MathJax>
+            </div>
+
+            <div className="admin-perguntas-alts">
+              {alternativas.map((a, i) => (
+                <div key={i} style={{ marginBottom: "10px" }}>
+                  <input 
+                    className="admin-perguntas-input alt-input" 
+                    placeholder={`Alternativa ${i + 1}`} 
+                    value={a} 
+                    onChange={(e) => atualizarAlternativa(i, e.target.value)} 
+                  />
+                  <div style={{ fontSize: "0.9em", color: "#ccc", marginTop: "5px" }}>
+                    <MathJax dynamic display>{a || "..."}</MathJax>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <div className="admin-perguntas-select-resposta">
+              <p>Determine qual será a alternativa correta:</p>
+              {alternativas.map((a, i) => {
+                const letra = String.fromCharCode(65 + i);
+                const selecionada = resposta == i + 1;
+                return (
+                  <label key={i} className={`admin-perguntas-label-resp ${selecionada ? "resp-selecionada" : ""}`}>
+                    <input type="radio" name="correta" value={i + 1} checked={selecionada} onChange={(e) => setResposta(e.target.value)} />
+                    <span className="resp-letra">{letra})</span>
+                    <MathJax inline dynamic>{a || `Alternativa ${letra}`}</MathJax>
+                  </label>
+                );
+              })}
+            </div>
+            <button className="admin-perguntas-btn" onClick={salvar}>{adicionando ? "Adicionar Pergunta" : "Salvar Edição"}</button>
           </div>
-        </div>
-      )}
-    </div>
+        ) : (
+          <div>
+            <button className="admin-perguntas-btn" onClick={adicionarPergunta}>Adicionar Nova Pergunta</button>
+            <div className="admin-perguntas-lista">
+              {lista.map((p, i) => (
+                <div key={i} className="admin-perguntas-item">
+                  <div>
+                    <b>{i + 1}. </b>
+                    <MathJax dynamic display>{p.titulo}</MathJax>
+                  </div>
+                  <div>
+                      <button className="admin-perguntas-btn-edit" onClick={() => iniciarEdicao(i)}>Editar</button>
+                      <button className="admin-perguntas-btn-del" onClick={() => remover(i)}>Excluir</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </MathJaxContext>
   );
 }
 

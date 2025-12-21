@@ -186,6 +186,18 @@ footer {
     font-size: 3rem;
 }
 
+.div-alternativas label mjx-container[display="true"] {
+    margin: 5px 0 !important;
+    width: 100%;
+    display: block;
+}
+
+/* Ajuste para o título não ficar com espaço excessivo */
+.titulo-pergunta mjx-container {
+    text-align: left !important; /* Ou center, se preferir */
+    margin: 10px 0 !important;
+}
+
 /* Mobile */
 @media (max-width: 800px) {
     .container-quiz {

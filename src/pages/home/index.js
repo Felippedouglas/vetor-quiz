@@ -149,6 +149,30 @@ export default function Home() {
         return `${min}m ${seg}s`;
     }
 
+    async function removerRanking(id) {
+        if (!user) return;
+
+        if (!window.confirm(
+            "Quer excluir este jogador do ranking? Ao excluí-lo, não será possível recuperar a pontuação."
+        )) return;
+
+        const rankingRef = doc(db, "ranking", id);
+        const snap = await getDoc(rankingRef);
+
+        if (!snap.exists()) return;
+
+        // Salvar backup em deleted_ranking
+        await addDoc(collection(db, "deleted_ranking"), {
+            ...snap.data(),
+            deletedAt: Date.now(),
+            deletedBy: user.uid,
+            originalId: id
+        });
+
+        // Excluir do ranking
+        await deleteDoc(rankingRef);
+    }
+
     if (carregandoLogin) {
         return (
             <div className="auto-login-content">
@@ -196,14 +220,29 @@ export default function Home() {
                             <h4>Ainda não há um ranking</h4>
                         ) : (
                             ranking.map((r, i) => (
-                                <p key={r.id} className="ranking-item">
-                                    <span>
-                                        <strong>{i + 1}º</strong> {r.nome.length > 15 ? r.nome.slice(0, 10) + "..." : r.nome}
-                                    </span>
-                                    <span className="acertos-tempo">
-                                        {r.corretas} acertos / {formatarTempo(r.tempo)}
-                                    </span>
-                                </p>
+                                <div key={r.id} className="ranking-item">
+                                    <section>
+                                        <span>
+                                            <strong>{i + 1}º</strong> {r.nome.length > 15 ? r.nome.slice(0, 10) + "..." : r.nome}
+                                        </span>
+
+                                        <span className="acertos-tempo">
+                                            {r.corretas} acertos / {formatarTempo(r.tempo)}
+                                        </span>
+                                    </section>
+
+                                    {user?.uid && (
+                                        <section>
+                                            <button
+                                                className="btn-remover-ranking"
+                                                title="Remover do ranking"
+                                                onClick={() => removerRanking(r.id)}
+                                            >
+                                                ✖
+                                            </button>
+                                        </section>
+                                    )}
+                                </div>
                             ))
                         )}
                     </div>
